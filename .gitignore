@@ -1,0 +1,80 @@
+# Node / Frontend
+node_modules/
+dist/
+build/
+dist-ssr/
+*.tsbuildinfo
+frontend/dump.json
+frontend/nodes.json
+frontend/refactor.js
+frontend/replace_app.cjs
+
+# Python / Backend
+__pycache__/
+*.pyc
+venv/
+.venv/
+env/
+audiobook_builder/venv/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# Project Workspaces & Media
+audiobook_builder/projects/
+!audiobook_builder/projects/.gitkeep
+
+# Legacy Media & Temp Folders
+audiobook_builder/Voice_ref/
+audiobook_builder/images/
+audiobook_builder/last_frames/
+audiobook_builder/temp_thumbnails/
+audiobook_builder/temp_audio/
+audiobook_builder/output/
+audiobook_builder/outputs/
+audiobook_builder/temp/
+audiobook_builder/agy_tmp/
+
+# Logs & Junk Files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+audiobook_builder/*.log
+audiobook_builder/output.txt
+audiobook_builder/output.html
+audiobook_builder/output.json
+audiobook_builder/out.json
+audiobook_builder/result*.txt
+audiobook_builder/recovered_logs.txt
+audiobook_builder/progress.json
+audiobook_builder/*.migrated
+audiobook_builder/silent.mp4
+audiobook_builder/test_*.wav
+
+# Testing & Tools
+.pytest_cache/
+coverage/
+.nyc_output/
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Agent Folders
+.claude/
+.gemini/
+.antigravitycli/
+.agents/
+.agent/

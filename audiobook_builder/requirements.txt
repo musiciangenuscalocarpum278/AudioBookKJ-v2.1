@@ -1,0 +1,15 @@
+# OmniVoice / TTS dependencies
+torch
+torchaudio
+transformers
+huggingface-hub
+soundfile
+omnivoice
+
+# Audio Processing
+pydub
+
+# Utilities
+tqdm
+python-dotenv
+Pillow

@@ -1,0 +1,142 @@
+      <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <Mic className="w-4 h-4 text-white" />
+            </div>
+            <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+              AudioBook Studio
+            </h1>
+          </div>
+
+          {/* TABS NAVIGATION */}
+          <div className="flex space-x-1 rounded-xl bg-slate-900/80 p-1 border border-slate-800 w-fit">
+            <button
+              onClick={() => setActiveTab('audio')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                activeTab === 'audio'
+                  ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              }`}
+            >
+              <Mic className="w-4 h-4" /> Audio Studio
+            </button>
+            <button
+              onClick={() => setActiveTab('video')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                activeTab === 'video'
+                  ? 'bg-amber-500 text-slate-900 shadow-lg shadow-amber-500/20'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              }`}
+            >
+              <Video className="w-4 h-4" /> Video Studio
+            </button>
+            <button
+              onClick={() => { setActiveTab('post-production'); localStorage.setItem('audiobook_active_tab', 'post-production'); }}
+              className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                activeTab === 'post-production'
+                  ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              }`}
+            >
+              <Settings className="w-4 h-4" /> Post-Production
+            </button>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {activeTab === 'audio' && (
+              <>
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  className="hidden" 
+                  ref={importInputRef}
+                  onChange={handleImportProject}
+                />
+                <button 
+                  onClick={() => importInputRef.current?.click()}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-full text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                  title="Load kịch bản (JSON)"
+                >
+                  <FolderOpen className="w-4 h-4" /> Load JSON
+                </button>
+
+                <button 
+                  onClick={exportProject}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-full text-slate-300 hover:text-white hover:bg-slate-800 transition-colors border-r border-slate-700 pr-4 mr-1"
+                  title="Lưu kịch bản (JSON)"
+                >
+                  <Save className="w-4 h-4" /> Save JSON
+                </button>
+
+                <input 
+                  type="file" 
+                  accept=".md,.txt" 
+                  className="hidden" 
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                />
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isGenerating}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full bg-slate-800 hover:bg-slate-700 transition-colors border border-slate-700 disabled:opacity-50"
+                >
+                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {isGenerating ? "Đang nhờ AI..." : "Upload .md"}
+                </button>
+
+                <button 
+                  onClick={handleRenderAll}
+                  disabled={renderProgress.status === 'rendering' || renderProgress.status === 'assembling' || isGenerating}
+                  className="flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/25 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {renderProgress.status === 'rendering' || renderProgress.status === 'assembling' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Play className="w-4 h-4 fill-current" />
+                  )}
+                  {renderProgress.status === 'rendering' 
+                    ? `Đang Render (${renderProgress.currentLine}/${renderProgress.totalLines})` 
+                    : renderProgress.status === 'assembling' 
+                    ? "Đang Ghép Nối..." 
+                    : script.some(l => l.selected) 
+                      ? `Render Selected (${script.filter(l => l.selected).length})` 
+                      : "Render All"}
+                </button>
+              </>
+            )}
+
+            {activeTab === 'post-production' && (
+              <>
+                {renderProgress.status === 'done' && renderProgress.finalAudioUrl && (
+                  <a 
+                    href={renderProgress.finalAudioUrl}
+                    download={timelineVideoClips.length > 0 ? "Final_Audiobook_Video.mp4" : "Final_Audiobook.mp3"}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition-colors animate-pulse"
+                  >
+                    <Download className="w-4 h-4" />
+                    {timelineVideoClips.length > 0 ? "Tải Video Về" : "Tải Audio Về"}
+                  </a>
+                )}
+                <button 
+                  onClick={handleMixAndExport}
+                  className="flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  Mix & Export
+                </button>
+              </>
+            )}
+
+            {activeTab === 'video' && (
+              <button 
+                onClick={() => { handleSyncToTimeline(); setActiveTab('post-production'); localStorage.setItem('audiobook_active_tab', 'post-production'); }}
+                className="flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                <Video className="w-4 h-4 fill-current" />
+                Sync To Timeline
+              </button>
+            )}
+          </div>
+        </div>
+      </header>

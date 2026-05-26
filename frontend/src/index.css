@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-obsidian-dark: #09090b;
+  --color-obsidian-panel: #18181b;
+  --color-amber-cinematic: #f97316;
+  --color-amber-glow: #ea580c;
+}
+
+body {
+  margin: 0;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #09090b; /* Obsidian Dark */
+  color: #f4f4f5; /* Zinc-100 */
+}
+
+/* Custom Scrollbar for Studio Theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #09090b; /* Obsidian Dark */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272a; /* Zinc-800 */
+  border-radius: 3px;
+  border: 1px solid #18181b;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ea580c; /* Cinematic Amber Glow */
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Subtle mount motion for tab panels and collapsible surfaces */
+@keyframes tabPanelEnter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes panelEnter {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.tab-panel-enter {
+  animation: tabPanelEnter 150ms ease-out both;
+}
+
+.panel-enter {
+  animation: panelEnter 180ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-panel-enter,
+  .panel-enter {
+    animation: none;
+  }
+}
+
+/* --- Flowboard Performance & Aesthetics Upgrade (Phase 10) --- */
+
+/* Node Level of Detail toggles */
+.video-node-compact,
+.scene-node-compact {
+  display: none !important;
+}
+
+.video-node-detailed {
+  display: block !important;
+}
+
+.scene-node-detailed {
+  display: flex !important;
+}
+
+/* Zoomed-out compact view */
+.flow-zoom-low .video-node-compact,
+.flow-zoom-low .scene-node-compact {
+  display: flex !important;
+}
+
+.flow-zoom-low .video-node-detailed,
+.flow-zoom-low .scene-node-detailed {
+  display: none !important;
+}
+
+/* Premium connections styling */
+.react-flow__handle {
+  width: 12px !important;
+  height: 12px !important;
+  background-color: #09090b !important; /* Obsidian Dark */
+  border: 2px solid #27272a !important; /* Zinc 800 */
+  border-radius: 9999px !important; /* Circular rounded-full */
+  transition: all 150ms ease-out !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.react-flow__handle:hover {
+  border-color: #f97316 !important; /* Cinematic Amber */
+  transform: scale(1.2);
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+}
+
+/* Custom rounded corner node wrappers */
+.react-flow__node {
+  border-radius: 16px !important; /* Force outer wrapper rounding for React Flow nodes */
+}
+
