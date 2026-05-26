@@ -1,100 +1,251 @@
 @echo off
-title Audiobook Factory Studio - Launcher
-chcp 65001 > nul
-set PYTHONIOENCODING=utf-8
-cls
+setlocal EnableExtensions
 
-echo ======================================================================
-echo       AUDIOBOOK FACTORY STUDIO - HIGH-FIDELITY ORCHESTRATOR
-echo ======================================================================
-echo  Cinematic Audio-Video automated launcher for Audiobook-KJ
-echo ======================================================================
+title AudioBook KJ - One Click Setup
+set "ROOT=%~dp0"
+set "FRONTEND_DIR=%ROOT%frontend"
+set "BACKEND_DIR=%ROOT%audiobook_builder"
+set "VENV_DIR=%BACKEND_DIR%\venv"
+set "BACKEND_PY=%VENV_DIR%\Scripts\python.exe"
+set "PYTHON_CMD=python"
+set "MISSING_REQUIRED=0"
+
+cd /d "%ROOT%"
+
+echo.
+echo ============================================================
+echo  AudioBook KJ - One Click Setup / Launcher
+echo ============================================================
+echo.
+echo This launcher will:
+echo  - Check required software
+echo  - Offer to install missing software with winget
+echo  - Install frontend dependencies
+echo  - Create Python virtual environment
+echo  - Install backend dependencies
+echo  - Start backend and frontend in separate windows
+echo.
+echo NOTE: AI/TTS dependencies can be large and may take a long time.
 echo.
 
-:: 1. Verify Python Installation
-echo [SYSTEM] Checking Python installation...
-set "PYTHON_EXE="
-if exist "%USERPROFILE%\AppData\Local\Programs\Python\Python312\python.exe" (
-    set "PYTHON_EXE=%USERPROFILE%\AppData\Local\Programs\Python\Python312\python.exe"
-    echo [SYSTEM] Found local stable Python 3.12 at %USERPROFILE%\AppData\Local\Programs\Python\Python312\python.exe
-) else if exist "%USERPROFILE%\AppData\Local\Programs\Python\Python310\python.exe" (
-    set "PYTHON_EXE=%USERPROFILE%\AppData\Local\Programs\Python\Python310\python.exe"
-    echo [SYSTEM] Found local stable Python 3.10 at %USERPROFILE%\AppData\Local\Programs\Python\Python310\python.exe
-) else (
-    where python >nul 2>nul
-    if %errorlevel% equ 0 (
-        set "PYTHON_EXE=python"
-        echo [SYSTEM] Using default system Python.
-    )
+call :ensure_tool git Git.Git "Git"
+call :ensure_node
+call :ensure_python
+call :ensure_tool ffmpeg Gyan.FFmpeg "FFmpeg"
+
+if "%MISSING_REQUIRED%"=="1" (
+  echo.
+  echo One or more required tools are still missing.
+  echo If winget installed something, close this window, open it again,
+  echo then double-click run.bat one more time.
+  echo.
+  pause
+  exit /b 1
 )
 
-if not defined PYTHON_EXE (
-    echo [ERROR] Python was not found on your system!
-    echo Please install Python 3.10 or 3.12 and ensure it is available in your PATH.
-    echo Cài đặt Python 3.10 hoặc 3.12 vào máy và tick chọn "Add to PATH" nhé.
+echo.
+echo ============================================================
+echo  Preparing frontend
+echo ============================================================
+if not exist "%FRONTEND_DIR%\package.json" (
+  echo ERROR: Cannot find frontend\package.json
+  pause
+  exit /b 1
+)
+
+if not exist "%FRONTEND_DIR%\.env" (
+  echo Creating frontend\.env
+  > "%FRONTEND_DIR%\.env" echo VITE_API_URL=http://localhost:8000
+)
+
+if not exist "%FRONTEND_DIR%\node_modules" (
+  echo Installing frontend dependencies...
+  pushd "%FRONTEND_DIR%"
+  call npm install
+  if errorlevel 1 (
+    echo.
+    echo ERROR: npm install failed.
+    popd
     pause
     exit /b 1
+  )
+  popd
+) else (
+  echo frontend\node_modules already exists. Skipping npm install.
 )
 
-:: 2. Verify Node.js Installation
-echo [SYSTEM] Checking Node.js installation...
-where node >nul 2>nul
-if %errorlevel% neq 0 (
-    echo [ERROR] Node.js was not found in your system PATH!
-    echo Please install Node.js v18+ to run the React developer interface.
+echo.
+echo ============================================================
+echo  Preparing backend
+echo ============================================================
+if not exist "%BACKEND_DIR%\requirements.txt" (
+  echo ERROR: Cannot find audiobook_builder\requirements.txt
+  pause
+  exit /b 1
+)
+
+if not exist "%VENV_DIR%" (
+  echo Creating Python virtual environment...
+  %PYTHON_CMD% -m venv "%VENV_DIR%"
+  if errorlevel 1 (
+    echo.
+    echo ERROR: Could not create Python virtual environment.
     pause
     exit /b 1
-)
-
-:: 3. Setup Python Virtual Environment (venv)
-echo.
-echo [VENV] Checking Python virtual environment...
-if not exist "audiobook_builder\venv" (
-    echo [VENV] Virtual environment not found. Creating new virtual environment at audiobook_builder\venv...
-    "%PYTHON_EXE%" -m venv audiobook_builder\venv
-)
-
-echo [VENV] Activating virtual environment...
-call audiobook_builder\venv\Scripts\activate.bat
-
-echo [VENV] Upgrading package manager (pip)...
-python -m pip install --upgrade pip
-
-echo [VENV] Ensuring backend dependencies are installed...
-pip install -r audiobook_builder/requirements.txt
-
-:: 4. Verify Frontend Node Modules
-echo.
-echo [FRONTEND] Checking React frontend modules...
-if not exist "frontend\node_modules" (
-    echo [FRONTEND] node_modules not found. Installing node packages...
-    cd frontend
-    call npm install --legacy-peer-deps
-    cd ..
+  )
 ) else (
-    echo [FRONTEND] Node packages are already installed.
+  echo Python virtual environment already exists.
 )
 
-:: 5. Launch Orchestrator
+echo Upgrading pip...
+"%BACKEND_PY%" -m pip install --upgrade pip
+if errorlevel 1 (
+  echo.
+  echo WARNING: pip upgrade failed. Continuing anyway.
+)
+
 echo.
-echo ======================================================================
-echo  AUDIOBOOK FACTORY STUDIO IS READY TO LAUNCH!
-echo ======================================================================
-echo  * Frontend: http://localhost:5173 (Vite Hot-Reload)
-echo  * Backend API: http://localhost:8000 (FastAPI Uvicorn)
-echo ======================================================================
+echo Backend dependencies include AI/TTS packages such as torch and OmniVoice.
+echo They may download large files and can take a while.
+choice /C YN /M "Install/update backend Python dependencies now"
+if errorlevel 2 goto skip_backend_deps
+
+"%BACKEND_PY%" -m pip install -r "%BACKEND_DIR%\requirements.txt"
+if errorlevel 1 (
+  echo.
+  echo ERROR: Backend dependency install failed.
+  echo You can still inspect the source, but the backend may not run.
+  pause
+  exit /b 1
+)
+
+:skip_backend_deps
+if not exist "%BACKEND_DIR%\output" mkdir "%BACKEND_DIR%\output"
+if not exist "%BACKEND_DIR%\outputs" mkdir "%BACKEND_DIR%\outputs"
+if not exist "%BACKEND_DIR%\temp_audio" mkdir "%BACKEND_DIR%\temp_audio"
+if not exist "%BACKEND_DIR%\Voice_ref" mkdir "%BACKEND_DIR%\Voice_ref"
+
+echo.
+echo ============================================================
+echo  Starting app
+echo ============================================================
+echo Backend:  http://localhost:8000
+echo Frontend: http://localhost:5173
+echo.
+echo Two terminal windows will open. Keep them running while using the app.
 echo.
 
-:: Open frontend browser tab automatically
+start "AudioBook KJ Backend" cmd /k "cd /d ""%BACKEND_DIR%"" && ""%BACKEND_PY%"" server.py"
+timeout /t 4 /nobreak >nul
+start "AudioBook KJ Frontend" cmd /k "cd /d ""%FRONTEND_DIR%"" && npm run dev -- --host 127.0.0.1"
+timeout /t 3 /nobreak >nul
 start "" "http://localhost:5173"
 
-:: Start Frontend dev server in a new parallel CMD window
-echo [LAUNCH] Starting Frontend in parallel terminal...
-start "Audiobook Studio - Frontend" cmd /k "cd frontend && npm run dev"
-
-:: Run Backend server in the current CMD window
-echo [LAUNCH] Starting Backend API Server...
-cd audiobook_builder
-python server.py
-
+echo.
+echo Done. If the browser shows an error, wait a little and refresh.
+echo If the backend window is downloading AI models, let it finish.
+echo.
 pause
+exit /b 0
+
+:ensure_tool
+set "TOOL=%~1"
+set "WINGET_ID=%~2"
+set "LABEL=%~3"
+where "%TOOL%" >nul 2>nul
+if not errorlevel 1 (
+  echo [OK] %LABEL% found.
+  exit /b 0
+)
+
+echo [MISSING] %LABEL% was not found.
+call :install_with_winget "%WINGET_ID%" "%LABEL%"
+where "%TOOL%" >nul 2>nul
+if errorlevel 1 (
+  echo [ERROR] %LABEL% is still missing.
+  set "MISSING_REQUIRED=1"
+) else (
+  echo [OK] %LABEL% found after install.
+)
+exit /b 0
+
+:ensure_node
+where node >nul 2>nul
+if errorlevel 1 (
+  echo [MISSING] Node.js was not found.
+  call :install_with_winget "OpenJS.NodeJS.LTS" "Node.js LTS"
+) else (
+  node -e "const v=process.versions.node.split('.').map(Number); process.exit(((v[0]===20&&v[1]>=19)||v[0]>=22)?0:1)" >nul 2>nul
+  if errorlevel 1 (
+    echo [WARNING] Node.js is installed, but this project expects Node 20.19+ or 22.12+.
+    choice /C YN /M "Install/update Node.js LTS with winget"
+    if not errorlevel 2 call :install_with_winget "OpenJS.NodeJS.LTS" "Node.js LTS"
+  ) else (
+    echo [OK] Node.js version looks good.
+  )
+)
+
+where node >nul 2>nul
+if errorlevel 1 set "MISSING_REQUIRED=1"
+where npm >nul 2>nul
+if errorlevel 1 (
+  echo [ERROR] npm was not found.
+  set "MISSING_REQUIRED=1"
+) else (
+  echo [OK] npm found.
+)
+exit /b 0
+
+:ensure_python
+where python >nul 2>nul
+if not errorlevel 1 (
+  set "PYTHON_CMD=python"
+  echo [OK] Python found.
+  exit /b 0
+)
+
+where py >nul 2>nul
+if not errorlevel 1 (
+  set "PYTHON_CMD=py -3"
+  echo [OK] Python launcher found.
+  exit /b 0
+)
+
+echo [MISSING] Python was not found.
+call :install_with_winget "Python.Python.3.11" "Python 3.11"
+where python >nul 2>nul
+if not errorlevel 1 (
+  set "PYTHON_CMD=python"
+  echo [OK] Python found after install.
+  exit /b 0
+)
+
+where py >nul 2>nul
+if not errorlevel 1 (
+  set "PYTHON_CMD=py -3"
+  echo [OK] Python launcher found after install.
+  exit /b 0
+)
+
+echo [ERROR] Python is still missing.
+set "MISSING_REQUIRED=1"
+exit /b 0
+
+:install_with_winget
+set "PKG=%~1"
+set "NAME=%~2"
+where winget >nul 2>nul
+if errorlevel 1 (
+  echo [ERROR] winget is not available. Please install %NAME% manually.
+  set "MISSING_REQUIRED=1"
+  exit /b 0
+)
+
+choice /C YN /M "Install %NAME% with winget"
+if errorlevel 2 (
+  set "MISSING_REQUIRED=1"
+  exit /b 0
+)
+
+winget install --id "%PKG%" -e --accept-package-agreements --accept-source-agreements
+exit /b 0
