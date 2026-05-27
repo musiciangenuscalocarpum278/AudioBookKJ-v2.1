@@ -16,6 +16,7 @@ venv/
 .venv/
 env/
 audiobook_builder/venv/
+audiobook_builder/*.spec
 
 # Environment
 .env
@@ -43,6 +44,37 @@ audiobook_builder/output/
 audiobook_builder/outputs/
 audiobook_builder/temp/
 audiobook_builder/agy_tmp/
+
+# Member/Desktop local workspaces
+AudioBookKJMemberWorkspace/
+AudioBookKJWorkspace/
+workspace/
+workspaces/
+
+# Private desktop/member packaging source and artifacts
+/package.json
+/package-lock.json
+/src-tauri/
+/scripts/build-desktop-*.ps1
+/docs/member-edition-plan.md
+/frontend/public/loading.html
+/audiobook_builder/app_config.py
+/audiobook_builder/desktop_server.py
+/audiobook_builder/requirements-desktop.txt
+/audiobook_builder/routers/diagnostics.py
+src-tauri/target/
+src-tauri/gen/
+src-tauri/binaries/*.exe
+src-tauri/binaries/*.pdb
+src-tauri/binaries/*-x86_64-*
+src-tauri/binaries/*-aarch64-*
+*.msi
+*.dmg
+*.pkg
+*.AppImage
+*.deb
+*.rpm
+*-setup.exe
 
 # Logs & Junk Files
 *.log

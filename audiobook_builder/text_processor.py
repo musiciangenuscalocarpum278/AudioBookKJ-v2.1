@@ -22,11 +22,37 @@ def clean_markdown(md_text):
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-def chunk_text(text):
-    """Chia văn bản thành các đoạn (chunk) nhỏ dựa trên dấu xuống dòng đôi."""
+def chunk_text(text, max_chars=1500):
+    """Chia văn bản thành các đoạn (chunk) nhỏ dựa trên dấu xuống dòng đôi.
+    Nếu đoạn văn nào quá dài (vượt quá max_chars), tự động tách nhỏ theo dấu câu."""
     paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
-    # Có thể thêm logic gộp các đoạn quá ngắn hoặc cắt các đoạn quá dài ở đây
-    return paragraphs
+    final_paragraphs = []
+    
+    for p in paragraphs:
+        if len(p) <= max_chars:
+            final_paragraphs.append(p)
+        else:
+            # Tách đoạn văn quá dài thành các câu nhỏ dựa trên dấu chấm, hỏi, cảm thán
+            sentences = re.split(r'(?<=[.!?])\s+', p)
+            current_paragraph = ""
+            for s in sentences:
+                s = s.strip()
+                if not s:
+                    continue
+                if len(current_paragraph) + len(s) + 1 <= max_chars:
+                    if current_paragraph:
+                        current_paragraph += " " + s
+                    else:
+                        current_paragraph = s
+                else:
+                    if current_paragraph:
+                        final_paragraphs.append(current_paragraph)
+                    current_paragraph = s
+            if current_paragraph:
+                final_paragraphs.append(current_paragraph)
+                
+    return final_paragraphs
+
 
 def parse_gemini_json(ai_text: str) -> list:
     """Bóc tách mảng JSON từ kết quả text của Gemini, sửa lỗi markdown block."""

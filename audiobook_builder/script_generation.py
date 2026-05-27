@@ -51,6 +51,7 @@ Please read the provided Vietnamese text chunk and perform the following:
 5. Non-verbal audio effects: you can insert these tags at the beginning or middle of the dialogue to increase realism.
 ALLOWED TAGS: [laughter], [sigh], [confirmation-en], [question-en], [question-ah], [question-oh], [question-ei], [question-yi], [surprise-ah], [surprise-oh], [surprise-wa], [surprise-yo], [dissatisfaction-hnn].
 6. CRITICAL: PRESERVE 100% OF THE ORIGINAL WORDS from the input text in the 'text' field (only add tags and punctuation). DO NOT truncate, edit, or summarize the text.
+7. SEGMENT SPLITTING RULE: Do NOT put a long continuous narrative text block into a single line object in the 'lines' array. Split long narrative blocks into multiple lines. Each line object should ideally contain only 1 to 2 sentences (roughly 100-250 characters). This is critical for us to generate high-fidelity, matching 'image_prompt's for every visual scene. When joining the 'text' fields of all lines, they must reconstruct the original input text 100% word-for-word, without any deletions, edits, or additions.
 
 YOU MUST RETURN A SINGLE JSON OBJECT, with no extra explanatory text, and no markdown formatting (```json). Structure:
 {
