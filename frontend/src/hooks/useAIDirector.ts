@@ -256,6 +256,7 @@ export function useAIDirector({
         reference_media_ids: mediaIds,
         aspect_ratio: aspectRatioRef.current,
         duration_seconds: (node.data.videoDuration as number) || videoDurationRef.current,
+        video_model_profile: useProjectStore.getState().videoModelProfile,
         is_grid_mode: node.data.renderMode === 'grid',
         start_image_url: node.data.frameUrl || null,
       });
@@ -486,6 +487,7 @@ export function useAIDirector({
         reference_media_ids: mediaIds,
         aspect_ratio: aspectRatioRef.current,
         duration_seconds: (parentNode.data.videoDuration as number) || videoDurationRef.current,
+        video_model_profile: useProjectStore.getState().videoModelProfile,
         is_grid_mode: parentNode.data.renderMode === 'grid',
         start_image_url: parentNode.data.frameUrl || null,
       });

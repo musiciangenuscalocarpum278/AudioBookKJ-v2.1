@@ -80,8 +80,14 @@ def _call_antigravity(full_prompt: str, task_name: str = "Antigravity Task") -> 
 
 @router.post("/api/generate-script")
 async def api_generate_script(req: ScriptRequest):
+    print(f"[Script API] /api/generate-script received {len(req.text or '')} chars", flush=True)
     cleaned = clean_markdown(req.text)
+    print(f"[Script API] cleaned manuscript length: {len(cleaned)} chars", flush=True)
     result = generate_script_from_manuscript(cleaned)
+    print(
+        f"[Script API] generated {len(result.get('script', [])) if isinstance(result, dict) else 'unknown'} script lines",
+        flush=True,
+    )
     return result
 
 

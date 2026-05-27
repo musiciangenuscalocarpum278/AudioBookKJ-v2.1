@@ -102,6 +102,8 @@ export interface RenderProgress {
 
 export type VideoTaskStatus = 'idle' | 'extracting' | 'storyboarding' | 'rendering' | 'error' | 'success';
 
+export type VideoModelProfile = 'ultra_low_priority' | 'google_pro';
+
 export interface VideoProgress {
   status: VideoTaskStatus;
   message: string;

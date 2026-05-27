@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, Wand2, Loader2, User, Upload, Trash2, CheckCircle, X, Eye, ChevronDown, ChevronRight, Settings, Star, BookMarked, GripVertical, Plus } from 'lucide-react';
-import type { CharacterMetadata } from '../../types';
+import type { CharacterMetadata, VideoModelProfile } from '../../types';
 import { API } from '../../config';import { useProjectStore } from '../../store/useProjectStore';
 
 interface VideoAssetsPanelProps {
@@ -42,6 +42,8 @@ const VideoAssetsPanel: React.FC<VideoAssetsPanelProps> = ({
 }) => {
   const [activeDrawer, setActiveDrawer] = useState<'none' | 'assets' | 'settings'>('none');
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const videoModelProfile = useProjectStore(s => s.videoModelProfile);
+  const setVideoModelProfile = useProjectStore(s => s.setVideoModelProfile);
 
   useEffect(() => {
     if (focusCanvas) {
@@ -89,6 +91,23 @@ const VideoAssetsPanel: React.FC<VideoAssetsPanelProps> = ({
               <div className="flex gap-1">
                 {[4, 6, 8].map(s => (
                   <button key={s} onClick={() => onDurationChange(s)} className={`px-2 py-1 text-[10px] rounded-sm font-medium transition-colors border ${videoDuration === s ? 'bg-amber-cinematic text-zinc-950 border-amber-cinematic font-bold' : 'bg-zinc-800 text-zinc-300 border-zinc-700/50 hover:bg-zinc-700'}`}>{s}s</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-zinc-400 mb-1.5 uppercase tracking-wider">Google Flow Video Model</label>
+              <div className="grid grid-cols-2 gap-1">
+                {([
+                  ['ultra_low_priority', 'Ultra Low'],
+                  ['google_pro', 'Pro'],
+                ] as [VideoModelProfile, string][]).map(([profile, label]) => (
+                  <button
+                    key={profile}
+                    onClick={() => setVideoModelProfile(profile)}
+                    className={`px-2 py-1.5 text-[10px] rounded-sm font-bold uppercase transition-colors border ${videoModelProfile === profile ? 'bg-amber-cinematic text-zinc-950 border-amber-cinematic' : 'bg-zinc-800 text-zinc-300 border-zinc-700/50 hover:bg-zinc-700'}`}
+                  >
+                    {label}
+                  </button>
                 ))}
               </div>
             </div>

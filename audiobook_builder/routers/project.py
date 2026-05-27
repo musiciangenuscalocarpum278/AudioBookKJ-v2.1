@@ -103,7 +103,8 @@ async def api_save_timeline_clips(req: Request):
 @router.post("/api/cleanup")
 async def api_cleanup_cache():
     """Delete all files in temp_audio/ and return stats."""
-    temp_dir = "temp_audio"
+    from app_config import get_temp_dir
+    temp_dir = get_temp_dir()
     deleted_count = 0
     freed_bytes = 0
     if os.path.isdir(temp_dir):
@@ -141,10 +142,18 @@ async def api_serve_project_media(project_id: str, path: str, request: Request):
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://tauri.localhost",
+        "https://tauri.localhost",
+        "tauri://localhost",
         "chrome-extension://afbgooleplghmdlphioflcbnpccggodb",
     ]
-    cors_headers = {}
-    if origin in allowed_origins or (origin and (origin.startswith("http://localhost:") or origin.startswith("http://127.0.0.1:"))):
+    if origin in allowed_origins or (
+        origin and (
+            origin.startswith("http://localhost:")
+            or origin.startswith("http://127.0.0.1:")
+            or origin.endswith(".tauri.localhost")
+        )
+    ):
         cors_headers = {
             "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",

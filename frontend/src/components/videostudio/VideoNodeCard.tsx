@@ -191,6 +191,7 @@ const VideoNodeCard = ({ id, data, selected }: NodeProps) => {
         reference_media_ids: [],
         aspect_ratio: useProjectStore.getState().videoAspectRatio || "16:9",
         duration_seconds: 2,
+        video_model_profile: useProjectStore.getState().videoModelProfile,
         is_grid_mode: false,
         start_image_url: null,
       });

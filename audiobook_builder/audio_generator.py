@@ -1,3 +1,5 @@
+import sys
+import traceback
 import torch
 import soundfile as sf
 import os
@@ -168,7 +170,8 @@ class AudioGenerator:
             sf.write(output_path, audio[0], 24000)
             return True
         except Exception as e:
-            print(f"Lỗi khi generate audio: {e}")
+            print(f"[AudioGenerator] generate() FAILED: {e}", flush=True)
+            traceback.print_exc(file=sys.stderr)
             return False
 
     def create_synthetic_voice(self, text, output_path, instruct):
@@ -182,5 +185,6 @@ class AudioGenerator:
             sf.write(output_path, audio[0], 24000)
             return True
         except Exception as e:
-            print(f"Lỗi khi create_synthetic_voice: {e}")
+            print(f"[AudioGenerator] create_synthetic_voice() FAILED: {e}", flush=True)
+            traceback.print_exc(file=sys.stderr)
             return False

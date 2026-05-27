@@ -45,6 +45,7 @@ export function useScriptManager({
       globalArtStyle: s.globalArtStyle,
       videoAspectRatio: s.videoAspectRatio,
       videoDuration: s.videoDuration,
+      videoModelProfile: s.videoModelProfile,
       flowkitProjectId: s.flowkitProjectId,
     };
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(payload, null, 2));
@@ -108,6 +109,7 @@ export function useScriptManager({
             global_art_style: json.globalArtStyle ?? '',
             video_aspect_ratio: json.videoAspectRatio ?? '16:9',
             video_duration: json.videoDuration ?? 8,
+            videoModelProfile: json.videoModelProfile ?? 'ultra_low_priority',
             flowkit_project_id: json.flowkitProjectId ?? '',
             locked_voices: json.lockedVoices ?? {},
             speaker_voice_params: json.speakerVoiceParams ?? {},

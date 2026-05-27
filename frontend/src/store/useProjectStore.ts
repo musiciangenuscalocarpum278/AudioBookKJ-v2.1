@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import localforage from 'localforage';
-import type { ScriptLine, TimelineClip, TimelineVideoClip, VoiceParams, CharacterMetadata, RenderProgress, VideoProgress } from '../types';
+import type { ScriptLine, TimelineClip, TimelineVideoClip, VoiceParams, CharacterMetadata, RenderProgress, VideoProgress, VideoModelProfile } from '../types';
 
 interface ProjectState {
   // ── Active tab ──────────────────────────────────────────────────────────
@@ -68,6 +68,9 @@ interface ProjectState {
 
   videoDuration: number;
   setVideoDuration: (duration: number) => void;
+
+  videoModelProfile: VideoModelProfile;
+  setVideoModelProfile: (profile: VideoModelProfile) => void;
 
   // ── TTS Settings ─────────────────────────────────────────────────────────
   ttsDenoise: boolean;
@@ -219,6 +222,9 @@ export const useProjectStore = create<ProjectState>()(
       videoDuration: 8,
       setVideoDuration: (duration) => set({ videoDuration: duration }),
 
+      videoModelProfile: 'ultra_low_priority',
+      setVideoModelProfile: (profile) => set({ videoModelProfile: profile }),
+
       // ── TTS Settings ──────────────────────────────────────────────────
       ttsDenoise: true,
       setTtsDenoise: (denoise) => set({ ttsDenoise: denoise }),
@@ -276,6 +282,7 @@ export const useProjectStore = create<ProjectState>()(
         globalArtStyle: state.globalArtStyle,
         videoAspectRatio: state.videoAspectRatio,
         videoDuration: state.videoDuration,
+        videoModelProfile: state.videoModelProfile,
         ttsDenoise: state.ttsDenoise,
         ttsPostprocess: state.ttsPostprocess,
         ttsNumStep: state.ttsNumStep,

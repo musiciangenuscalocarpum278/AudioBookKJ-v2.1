@@ -118,14 +118,15 @@ async def api_render_line(req: RenderLineRequest):
     vp = req.voice_params.dict() if req.voice_params else None
     ref_audio_path = _get_ref_audio_path(normalize_speaker_id(req.speaker), project_root)
     tts_params = _get_project_tts_params(req.project_id)
+    print(f"[Audio] render-line speaker={req.speaker!r} text_len={len(req.text)} ref={ref_audio_path} speed={req.speed} params={tts_params}", flush=True)
     success = audio_gen.generate(
-        req.text, wav_path, req.speaker, 
-        voice_params=vp, speed=req.speed, 
+        req.text, wav_path, req.speaker,
+        voice_params=vp, speed=req.speed,
         ref_audio_path=ref_audio_path,
         denoise=tts_params["denoise"],
         postprocess_output=tts_params["postprocess_output"],
         num_step=tts_params["num_step"],
-        guidance_scale=tts_params["guidance_scale"]
+        guidance_scale=tts_params["guidance_scale"],
     )
     if not success:
         raise HTTPException(500, "Render failed")
@@ -179,15 +180,17 @@ async def api_test_voice(req: TestVoiceRequest):
     vp = req.voice_params.dict() if req.voice_params else None
     ref_audio_path = _get_ref_audio_path(speaker_id, project_root)
     tts_params = _get_project_tts_params(req.project_id)
-    if audio_gen.generate(
-        req.text, wav_path, req.speaker, 
-        voice_params=vp, speed=req.speed, 
+    print(f"[Audio] test-voice speaker={req.speaker!r} text_len={len(req.text)} ref={ref_audio_path} speed={req.speed} params={tts_params}", flush=True)
+    success = audio_gen.generate(
+        req.text, wav_path, req.speaker,
+        voice_params=vp, speed=req.speed,
         ref_audio_path=ref_audio_path,
         denoise=tts_params["denoise"],
         postprocess_output=tts_params["postprocess_output"],
         num_step=tts_params["num_step"],
-        guidance_scale=tts_params["guidance_scale"]
-    ):
+        guidance_scale=tts_params["guidance_scale"],
+    )
+    if success:
         return FileResponse(wav_path, media_type="audio/wav")
     raise HTTPException(500, "Generate failed")
 
@@ -199,10 +202,17 @@ async def api_create_synthetic_voice(req: SyntheticVoiceRequest):
     project_root = get_project_root(req.project_id)
     perm_path = project_media_path(project_root, "voices/synthetic", f"{speaker_id}_synthetic.wav")
     os.makedirs(os.path.dirname(perm_path), exist_ok=True)
+
+    print(
+        f"[Audio API] /api/create-synthetic-voice speaker={speaker_id} project={req.project_id} output={perm_path}",
+        flush=True,
+    )
     
     success = audio_gen.create_synthetic_voice(req.sample_text, perm_path, req.instruct)
     if not success:
+        print(f"[Audio API] synthetic voice failed for speaker={speaker_id}", flush=True)
         raise HTTPException(500, "Generate failed")
+    print(f"[Audio API] synthetic voice created: {perm_path}", flush=True)
         
     # Xóa file upload cũ nếu có để tránh xung đột độ ưu tiên
     uploaded_path = project_media_path(project_root, "voices/uploaded", f"{speaker_id}_voice.wav")

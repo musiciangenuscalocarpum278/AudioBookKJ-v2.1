@@ -28,12 +28,16 @@ except ImportError:
     pass
 
 import asyncio
+import time
+import traceback
 from contextlib import asynccontextmanager
+from starlette.requests import Request
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from database import init_db
-from routers import audio, video, script, assets, export, project, flowkit, migration, playground
+from routers import audio, video, script, assets, export, project, flowkit, migration, playground, diagnostics
 
 
 @asynccontextmanager
@@ -46,6 +50,37 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="Audiobook Factory Studio API", lifespan=lifespan)
 
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    print(f"[Server] Unhandled exception on {request.method} {request.url.path}: {exc}", flush=True)
+    traceback.print_exc()
+    return JSONResponse(status_code=500, content={"detail": str(exc)})
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    started = time.perf_counter()
+    print(f"[HTTP] --> {request.method} {request.url.path}", flush=True)
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        elapsed_ms = (time.perf_counter() - started) * 1000
+        print(
+            f"[HTTP] !! {request.method} {request.url.path} failed after {elapsed_ms:.1f}ms: {exc}",
+            flush=True,
+        )
+        traceback.print_exc()
+        raise
+
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    print(
+        f"[HTTP] <-- {request.method} {request.url.path} {response.status_code} {elapsed_ms:.1f}ms",
+        flush=True,
+    )
+    return response
+
+
 DEV_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -53,6 +88,9 @@ DEV_ORIGINS = [
     "http://127.0.0.1:5174",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://tauri.localhost",
+    "https://tauri.localhost",
+    "tauri://localhost",
     "chrome-extension://afbgooleplghmdlphioflcbnpccggodb",
 ]
 
@@ -73,6 +111,7 @@ app.include_router(project.router)
 app.include_router(flowkit.router)
 app.include_router(migration.router)
 app.include_router(playground.router)
+app.include_router(diagnostics.router)
 
 if __name__ == "__main__":
     import uvicorn

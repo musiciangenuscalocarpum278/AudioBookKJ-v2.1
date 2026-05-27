@@ -1,8 +1,9 @@
 import os
 import re
+from app_config import get_projects_root
 
 # Base directory for all new projects
-GLOBAL_PROJECTS_ROOT = os.path.join(os.path.dirname(__file__), "projects")
+GLOBAL_PROJECTS_ROOT = get_projects_root()
 
 def _sanitize_slug(name: str) -> str:
     slug = re.sub(r'[^a-zA-Z0-9_\-]+', '-', name).strip('-').lower()

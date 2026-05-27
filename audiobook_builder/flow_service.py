@@ -3,21 +3,50 @@ import json
 import uuid
 import time
 import os
-from pathlib import Path
-
-try:
-    from dotenv import load_dotenv
-except ImportError:
-    load_dotenv = None
 
 from database import add_job
+
+# Google Flow's public API key — embedded verbatim in every aisandbox-pa
+# request URL the Flow web app emits. Not a user secret; safe to ship.
+_FLOW_API_KEY = "AIzaSyBtrm0o5ab1c-Ec8ZuLcGt3oJAA5VWt3pY"
+
+VIDEO_MODEL_PROFILES = {
+    "ultra_low_priority": {
+        "label": "Google Flow Ultra Low Priority",
+        "suffix": "_low_priority",
+    },
+    "google_pro": {
+        "label": "Google Flow Pro",
+        "suffix": "",
+    },
+}
+
+
+def resolve_veo_model_key(model_type: str, duration_seconds: int = 8, video_model_profile: str = "ultra_low_priority") -> str:
+    profile = VIDEO_MODEL_PROFILES.get(video_model_profile, VIDEO_MODEL_PROFILES["ultra_low_priority"])
+    suffix = profile["suffix"]
+    duration = int(duration_seconds or 8)
+
+    if duration == 4:
+        if model_type == "i2v":
+            return f"veo_3_1_i2v_s_lite_4s{suffix}"
+        return f"veo_3_1_t2v_lite_4s{suffix}"
+
+    if duration == 6:
+        if model_type == "i2v":
+            return f"veo_3_1_i2v_s_lite_6s{suffix}"
+        return f"veo_3_1_t2v_lite_6s{suffix}"
+
+    if model_type == "i2v":
+        return f"veo_3_1_i2v_lite{suffix}"
+    return f"veo_3_1_t2v_lite{suffix}"
+
 
 class FlowService:
     def __init__(self):
         self.active_ws = None
         self.flow_key = None
         self.pending_requests = {}
-        self._dotenv_loaded = False
 
     def resolve_request(self, data):
         req_id = data.get("id")
@@ -56,48 +85,11 @@ class FlowService:
         finally:
             self.pending_requests.pop(req_id, None)
 
-    def _get_api_key(self):
-        key = (os.environ.get("GOOGLE_API_KEY") or "").strip()
-        if key:
-            return key
-
-        if not self._dotenv_loaded:
-            env_path = Path(__file__).resolve().parent / ".env"
-
-            # Preferred path: python-dotenv if available.
-            if load_dotenv is not None:
-                load_dotenv(env_path, override=False)
-                key = (os.environ.get("GOOGLE_API_KEY") or "").strip()
-                if key:
-                    self._dotenv_loaded = True
-                    return key
-
-            # Hard fallback: parse .env manually so API key still works without python-dotenv.
-            if env_path.exists():
-                try:
-                    for line in env_path.read_text(encoding="utf-8", errors="ignore").splitlines():
-                        raw = line.strip()
-                        if not raw or raw.startswith("#") or "=" not in raw:
-                            continue
-                        k, v = raw.split("=", 1)
-                        if k.strip() == "GOOGLE_API_KEY":
-                            parsed = v.strip().strip('"').strip("'")
-                            if parsed:
-                                os.environ["GOOGLE_API_KEY"] = parsed
-                                self._dotenv_loaded = True
-                                return parsed
-                except Exception:
-                    pass
-
-        return ""
-
     def _build_url(self, path):
-        base = "https://aisandbox-pa.googleapis.com"
-        key = self._get_api_key()
-        if not key:
-            raise RuntimeError("GOOGLE_API_KEY not set — add it to audiobook_builder/.env")
+        # Allow workspace .env to override the bundled public key via env var
+        key = (os.environ.get("GOOGLE_API_KEY") or _FLOW_API_KEY).strip()
         sep = "&" if "?" in path else "?"
-        return f"{base}{path}{sep}key={key}"
+        return f"https://aisandbox-pa.googleapis.com{path}{sep}key={key}"
 
     def _client_context(self, project_id):
         return {
@@ -193,11 +185,12 @@ class FlowService:
                     return {"success": True, "media_id": media_id, "url": fife_url}
         return {"success": False, "error": res}
 
-    async def request_scene_video(self, prompt: str, project_id: str, scene_id: str, start_image_media_id: str = None, reference_media_ids: list = None, aspect_ratio: str = "16:9", duration_seconds: int = 8):
+    async def request_scene_video(self, prompt: str, project_id: str, scene_id: str, start_image_media_id: str = None, reference_media_ids: list = None, aspect_ratio: str = "16:9", duration_seconds: int = 8, video_model_profile: str = "ultra_low_priority"):
         aspect_ratio_api = "VIDEO_ASPECT_RATIO_LANDSCAPE" if aspect_ratio == "16:9" else "VIDEO_ASPECT_RATIO_PORTRAIT"
         
         model_type = "i2v" if start_image_media_id else "t2v"
-        model_key = f"veo_3_1_{model_type}_lite_low_priority"
+        model_key = resolve_veo_model_key(model_type, duration_seconds, video_model_profile)
+        print(f"[Flow Service] Video model profile={video_model_profile}, duration={duration_seconds}s, key={model_key}")
             
         request_item = {
             "aspectRatio": aspect_ratio_api,

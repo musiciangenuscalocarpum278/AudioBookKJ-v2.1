@@ -53,6 +53,7 @@ class GenerateSceneVideoRequest(BaseModel):
     reference_media_ids: Optional[list[str]] = None
     aspect_ratio: str = "16:9"
     duration_seconds: int = 8
+    video_model_profile: str = "ultra_low_priority"
     is_grid_mode: Optional[bool] = False
     start_image_url: Optional[str] = None
 
@@ -155,6 +156,7 @@ async def api_generate_scene_video(req: GenerateSceneVideoRequest):
                 reference_media_ids=req.reference_media_ids or [],
                 aspect_ratio=req.aspect_ratio,
                 duration_seconds=2, # Each sub-video is 2 seconds
+                video_model_profile=req.video_model_profile,
             )
             results.append(res_quad)
 
@@ -188,6 +190,7 @@ async def api_generate_scene_video(req: GenerateSceneVideoRequest):
             reference_media_ids=req.reference_media_ids or [],
             aspect_ratio=req.aspect_ratio,
             duration_seconds=req.duration_seconds,
+            video_model_profile=req.video_model_profile,
         )
         if res.get("success"):
             out = {"job_id": res["job_id"], "operation_name": res["operation_name"]}

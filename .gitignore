@@ -16,6 +16,7 @@ venv/
 .venv/
 env/
 audiobook_builder/venv/
+audiobook_builder/venv_backup*/
 audiobook_builder/*.spec
 
 # Environment
@@ -33,6 +34,11 @@ audiobook_builder/*.spec
 # Project Workspaces & Media
 audiobook_builder/projects/
 !audiobook_builder/projects/.gitkeep
+
+# Large Runtime / Binary files (>100MB - không push lên GitHub)
+audiobook_builder/runtime-windows-cuda.zip
+audiobook_builder/runtime-windows-*.zip
+audiobook_builder/runtime-*.zip
 
 # Legacy Media & Temp Folders
 audiobook_builder/Voice_ref/
@@ -54,10 +60,13 @@ workspaces/
 # Private desktop/member packaging source and artifacts
 /package.json
 /package-lock.json
+/dist-member/
 /src-tauri/
 /scripts/build-desktop-*.ps1
 /docs/member-edition-plan.md
+/docs/member-*.md
 /frontend/public/loading.html
+/frontend/public/console.html
 /audiobook_builder/app_config.py
 /audiobook_builder/desktop_server.py
 /audiobook_builder/requirements-desktop.txt

@@ -1,9 +1,11 @@
 """Shared server singletons — import from here, never re-instantiate."""
 import os
+import secrets
 from audio_generator import AudioGenerator
+from app_config import get_temp_dir, get_output_dir
 
-TEMP_DIR = "temp_audio"
-OUTPUT_DIR = "output"
+TEMP_DIR = get_temp_dir()
+OUTPUT_DIR = get_output_dir()
 PROFILE_FILE = os.path.join(os.path.dirname(__file__), "project_profile.json")
 
 def normalize_speaker_id(speaker: str) -> str:
@@ -23,6 +25,6 @@ print("Boot complete!")
 
 flowkit_state = {
     "flowKey": None,
-    "callbackSecret": "audiobook_secret_key_123",
+    "callbackSecret": secrets.token_hex(24),
     "active_ws": None,
 }

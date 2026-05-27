@@ -108,6 +108,29 @@ ffmpeg -version
 
 Optional Gemini CLI setup depends on your local AI tooling/account. If `gemini --version` fails, skip Gemini-related features or ask an AI agent to help install/configure it.
 
+## Hardware Requirements
+
+AudioBook KJ is a local-first AI media workflow, not a lightweight note-taking app. Local TTS/model features use Torch, Transformers, Hugging Face model caches, and OmniVoice, so first launch and first generation can take a while.
+
+Minimum:
+
+- **OS**: Windows 10/11 64-bit.
+- **RAM**: 8 GB.
+- **Storage**: 10-15 GB free space.
+- **CPU**: Recent Intel i5 / Ryzen 5 or equivalent.
+- **GPU**: Not required for the public source workflow, but CPU generation will be slower.
+- **Internet**: Required during setup and for first-time model/dependency downloads.
+
+Recommended:
+
+- **OS**: Windows 11 64-bit.
+- **RAM**: 16-32 GB.
+- **Storage**: 20-30 GB free space on SSD/NVMe.
+- **CPU**: Intel i7 / Ryzen 7 or better.
+- **GPU**: NVIDIA GPU with 6-8 GB+ VRAM if you plan to experiment with GPU/CUDA model generation.
+
+If the app appears to hang on first launch, it may be installing dependencies, loading model weights, or warming up the local AI/TTS engine. On low-memory machines, close other heavy apps before running generation/export jobs.
+
 ## Gemini CLI Setup
 
 Some backend helper flows call the `gemini` command directly, especially script cleanup, prompt enhancement, entity extraction, and storyboard generation helpers. Install Gemini CLI only if you want to use those features.
@@ -458,6 +481,29 @@ npm --version
 python --version
 ffmpeg -version
 ```
+
+## Cấu Hình Máy Khuyến Nghị
+
+AudioBook KJ là workflow AI chạy local-first, không phải app ghi chú nhẹ. Các tính năng TTS/model local dùng Torch, Transformers, Hugging Face model cache và OmniVoice, nên lần chạy đầu hoặc lần generate đầu có thể mất khá lâu.
+
+Tối thiểu:
+
+- **Hệ điều hành**: Windows 10/11 64-bit.
+- **RAM**: 8 GB.
+- **Ổ cứng trống**: 10-15 GB.
+- **CPU**: Intel i5 / Ryzen 5 đời tương đối mới hoặc tương đương.
+- **GPU**: Không bắt buộc với source public, nhưng chạy CPU sẽ chậm hơn.
+- **Internet**: Cần khi setup và tải dependency/model lần đầu.
+
+Khuyến nghị:
+
+- **Hệ điều hành**: Windows 11 64-bit.
+- **RAM**: 16-32 GB.
+- **Ổ cứng trống**: 20-30 GB, nên dùng SSD/NVMe.
+- **CPU**: Intel i7 / Ryzen 7 hoặc tốt hơn.
+- **GPU**: NVIDIA GPU 6-8 GB+ VRAM nếu muốn thử nghiệm generation bằng GPU/CUDA.
+
+Nếu app nhìn như đang đứng ở lần mở đầu, có thể nó đang cài dependency, nạp model weights, hoặc khởi động engine AI/TTS local. Với máy ít RAM, nên tắt bớt app nặng trước khi chạy generate/export.
 
 ## Cài Gemini CLI
 

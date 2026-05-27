@@ -137,6 +137,8 @@ function App() {
   const setVideoAspectRatio = useProjectStore(s => s.setVideoAspectRatio);
   const videoDuration = useProjectStore(s => s.videoDuration);
   const setVideoDuration = useProjectStore(s => s.setVideoDuration);
+  const videoModelProfile = useProjectStore(s => s.videoModelProfile);
+  const setVideoModelProfile = useProjectStore(s => s.setVideoModelProfile);
   const ttsDenoise = useProjectStore(s => s.ttsDenoise);
   const setTtsDenoise = useProjectStore(s => s.setTtsDenoise);
   const ttsPostprocess = useProjectStore(s => s.ttsPostprocess);
@@ -278,6 +280,7 @@ function App() {
         if (data.project.globalArtStyle) setGlobalArtStyle(data.project.globalArtStyle);
         if (data.project.videoAspectRatio) setVideoAspectRatio(data.project.videoAspectRatio);
         if (data.project.videoDuration) setVideoDuration(data.project.videoDuration);
+        if (data.project.videoModelProfile) setVideoModelProfile(data.project.videoModelProfile);
         if (data.project.flowkitProjectId) setFlowkitProjectId(data.project.flowkitProjectId);
         if (data.project.ttsDenoise !== undefined) setTtsDenoise(data.project.ttsDenoise);
         if (data.project.ttsPostprocess !== undefined) setTtsPostprocess(data.project.ttsPostprocess);
@@ -412,6 +415,7 @@ function App() {
         globalArtStyle,
         videoAspectRatio,
         videoDuration,
+        videoModelProfile,
         flowkitProjectId,
         speakerVoiceParams,
         lockedVoices,
@@ -427,7 +431,7 @@ function App() {
     }, 1500);
 
     return () => clearTimeout(profileSaveTimer.current);
-  }, [globalArtStyle, videoAspectRatio, videoDuration, flowkitProjectId, speakerVoiceParams, lockedVoices, currentProjectId, ttsDenoise, ttsPostprocess, ttsNumStep, ttsGuidanceScale, ttsSpeed]);
+  }, [globalArtStyle, videoAspectRatio, videoDuration, videoModelProfile, flowkitProjectId, speakerVoiceParams, lockedVoices, currentProjectId, ttsDenoise, ttsPostprocess, ttsNumStep, ttsGuidanceScale, ttsSpeed]);
 
   // Debounced save of Video Studio graph to SQLite whenever they change
   const videoGraphSaveTimer = React.useRef<ReturnType<typeof setTimeout>>();
@@ -1049,7 +1053,7 @@ function App() {
 
   const handleSaveProfile = (nextLockedVoices?: Record<string, boolean>) => {
     saveProfileMut.mutate(
-      { speakerVoiceParams, lockedVoices: nextLockedVoices ?? lockedVoices, flowkitProjectId, project_id: useProjectStore.getState().currentProjectId },
+      { speakerVoiceParams, lockedVoices: nextLockedVoices ?? lockedVoices, flowkitProjectId, videoModelProfile, project_id: useProjectStore.getState().currentProjectId },
       {
         onSuccess: () => toast.success("Đã lưu toàn bộ thiết lập Voice Casting và Project ID thành công!"),
         onError: () => toast.error("Lỗi khi lưu thiết lập!"),

@@ -4,7 +4,7 @@
 // Change VITE_API_URL in .env to switch between local dev and production.
 // ==========================================================================
 
-export const API_BASE = (import.meta as any).env?.VITE_API_URL ?? 'http://localhost:8000';
+export const API_BASE = (window as any).__AUDIOBOOK_KJ_API_BASE__ ?? (import.meta as any).env?.VITE_API_URL ?? 'http://localhost:8000';
 
 export const API = {
   // Audio

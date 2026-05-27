@@ -3,8 +3,9 @@ import os
 import json
 import time
 from storage import create_project_workspace
+from app_config import get_database_path
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "audiobook.db")
+DB_PATH = get_database_path()
 
 
 def get_conn() -> sqlite3.Connection:
@@ -26,11 +27,17 @@ def init_db():
         global_art_style TEXT NOT NULL DEFAULT '',
         video_aspect_ratio TEXT NOT NULL DEFAULT '16:9',
         video_duration INTEGER NOT NULL DEFAULT 8,
+        video_model_profile TEXT NOT NULL DEFAULT 'ultra_low_priority',
         flowkit_project_id TEXT NOT NULL DEFAULT '',
         tts_speed REAL NOT NULL DEFAULT 1.0,
+        project_root TEXT DEFAULT '',
+        media_root TEXT DEFAULT '',
+        storage_version INTEGER NOT NULL DEFAULT 1,
         created_at INTEGER NOT NULL DEFAULT (unixepoch()),
         updated_at INTEGER NOT NULL DEFAULT (unixepoch())
     )""")
+
+    _migrate_project_storage_fields()
 
     c.execute("INSERT OR IGNORE INTO projects (id) VALUES ('default')")
 
@@ -185,7 +192,6 @@ def init_db():
 
     _migrate_jobs_db_if_exists()
     _migrate_legacy_json_if_exists()
-    _migrate_project_storage_fields()
     _migrate_script_lines_speed()
     _migrate_project_tts_params()
 
@@ -233,6 +239,13 @@ def _migrate_project_tts_params():
             changed = True
         except Exception as e:
             print(f"[DB] Migration failed to add tts_speed: {e}")
+
+    if "video_model_profile" not in columns:
+        try:
+            c.execute("ALTER TABLE projects ADD COLUMN video_model_profile TEXT NOT NULL DEFAULT 'ultra_low_priority'")
+            changed = True
+        except Exception as e:
+            print(f"[DB] Migration failed to add video_model_profile: {e}")
             
     if changed:
         conn.commit()
@@ -426,6 +439,21 @@ def get_pending_jobs() -> list[dict]:
 
 # ── Project profile helpers ───────────────────────────────────────────────
 
+def _ensure_project_row(conn: sqlite3.Connection, project_id: str):
+    """Create a minimal project row when the frontend still references a stale local project id."""
+    project_id = project_id or "default"
+    exists = conn.execute("SELECT 1 FROM projects WHERE id=?", (project_id,)).fetchone()
+    if exists:
+        return
+
+    print(f"[DB] Project '{project_id}' missing; creating a compatibility project row.", flush=True)
+    workspace = create_project_workspace(project_id, project_id)
+    conn.execute(
+        "INSERT OR IGNORE INTO projects (id, name, project_root, media_root) VALUES (?, ?, ?, ?)",
+        (project_id, project_id, workspace["project_root"], workspace["media_root"]),
+    )
+
+
 def get_project_profile(project_id: str = 'default') -> dict:
     """Return profile in the same shape the frontend expects from GET /api/project-profile."""
     conn = get_conn()
@@ -456,6 +484,7 @@ def get_project_profile(project_id: str = 'default') -> dict:
         "globalArtStyle": project['global_art_style'] if project else '',
         "videoAspectRatio": project['video_aspect_ratio'] if project else '16:9',
         "videoDuration": project['video_duration'] if project else 8,
+        "videoModelProfile": project['video_model_profile'] if (project and 'video_model_profile' in project.keys()) else 'ultra_low_priority',
         "ttsDenoise": bool(project['tts_denoise']) if (project and 'tts_denoise' in project.keys()) else True,
         "ttsPostprocess": bool(project['tts_postprocess']) if (project and 'tts_postprocess' in project.keys()) else False,
         "ttsNumStep": project['tts_num_step'] if (project and 'tts_num_step' in project.keys()) else 32,
@@ -467,54 +496,62 @@ def get_project_profile(project_id: str = 'default') -> dict:
 def save_project_profile(data: dict, project_id: str = 'default'):
     """Persist profile data from the frontend into projects + voice_params tables."""
     conn = get_conn()
-    conn.execute("""
-        UPDATE projects SET
-            flowkit_project_id = COALESCE(?, flowkit_project_id),
-            global_art_style   = COALESCE(?, global_art_style),
-            video_aspect_ratio = COALESCE(?, video_aspect_ratio),
-            video_duration     = COALESCE(?, video_duration),
-            tts_denoise        = COALESCE(?, tts_denoise),
-            tts_postprocess    = COALESCE(?, tts_postprocess),
-            tts_num_step       = COALESCE(?, tts_num_step),
-            tts_guidance_scale = COALESCE(?, tts_guidance_scale),
-            tts_speed          = COALESCE(?, tts_speed),
-            updated_at         = unixepoch()
-        WHERE id = ?
-    """, (
-        data.get('flowkitProjectId') or None,
-        data.get('globalArtStyle') or None,
-        data.get('videoAspectRatio') or None,
-        int(data['videoDuration']) if data.get('videoDuration') is not None else None,
-        1 if data.get('ttsDenoise') is True else (0 if data.get('ttsDenoise') is False else None),
-        1 if data.get('ttsPostprocess') is True else (0 if data.get('ttsPostprocess') is False else None),
-        int(data['ttsNumStep']) if data.get('ttsNumStep') is not None else None,
-        float(data['ttsGuidanceScale']) if data.get('ttsGuidanceScale') is not None else None,
-        float(data['ttsSpeed']) if data.get('ttsSpeed') is not None else None,
-        project_id,
-    ))
-
-    locked = data.get('lockedVoices', {})
-    from state import normalize_speaker_id
-    for speaker, params in data.get('speakerVoiceParams', {}).items():
-        speaker_id = normalize_speaker_id(speaker)
+    try:
+        _ensure_project_row(conn, project_id)
         conn.execute("""
-            INSERT INTO voice_params (speaker, project_id, gender, age, pitch, is_locked)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(speaker, project_id) DO UPDATE SET
-                gender    = excluded.gender,
-                age       = excluded.age,
-                pitch     = excluded.pitch,
-                is_locked = excluded.is_locked
+            UPDATE projects SET
+                flowkit_project_id = COALESCE(?, flowkit_project_id),
+                global_art_style   = COALESCE(?, global_art_style),
+                video_aspect_ratio = COALESCE(?, video_aspect_ratio),
+                video_duration     = COALESCE(?, video_duration),
+                video_model_profile = COALESCE(?, video_model_profile),
+                tts_denoise        = COALESCE(?, tts_denoise),
+                tts_postprocess    = COALESCE(?, tts_postprocess),
+                tts_num_step       = COALESCE(?, tts_num_step),
+                tts_guidance_scale = COALESCE(?, tts_guidance_scale),
+                tts_speed          = COALESCE(?, tts_speed),
+                updated_at         = unixepoch()
+            WHERE id = ?
         """, (
-            speaker_id, project_id,
-            params.get('gender', 'female'),
-            params.get('age', 'adult'),
-            params.get('pitch', 'moderate'),
-            1 if locked.get(speaker) else 0,
+            data.get('flowkitProjectId') or None,
+            data.get('globalArtStyle') or None,
+            data.get('videoAspectRatio') or None,
+            int(data['videoDuration']) if data.get('videoDuration') is not None else None,
+            data.get('videoModelProfile') or None,
+            1 if data.get('ttsDenoise') is True else (0 if data.get('ttsDenoise') is False else None),
+            1 if data.get('ttsPostprocess') is True else (0 if data.get('ttsPostprocess') is False else None),
+            int(data['ttsNumStep']) if data.get('ttsNumStep') is not None else None,
+            float(data['ttsGuidanceScale']) if data.get('ttsGuidanceScale') is not None else None,
+            float(data['ttsSpeed']) if data.get('ttsSpeed') is not None else None,
+            project_id,
         ))
 
-    conn.commit()
-    conn.close()
+        locked = data.get('lockedVoices', {})
+        from state import normalize_speaker_id
+        for speaker, params in data.get('speakerVoiceParams', {}).items():
+            speaker_id = normalize_speaker_id(speaker)
+            conn.execute("""
+                INSERT INTO voice_params (speaker, project_id, gender, age, pitch, is_locked)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(speaker, project_id) DO UPDATE SET
+                    gender    = excluded.gender,
+                    age       = excluded.age,
+                    pitch     = excluded.pitch,
+                    is_locked = excluded.is_locked
+            """, (
+                speaker_id, project_id,
+                params.get('gender', 'female'),
+                params.get('age', 'adult'),
+                params.get('pitch', 'moderate'),
+                1 if locked.get(speaker) else 0,
+            ))
+
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def get_project_state(project_id: str = 'default') -> dict:
@@ -541,6 +578,7 @@ def get_project_state(project_id: str = 'default') -> dict:
             "globalArtStyle":    project['global_art_style']    if project else '',
             "videoAspectRatio":  project['video_aspect_ratio']  if project else '16:9',
             "videoDuration":     project['video_duration']       if project else 8,
+            "videoModelProfile": project['video_model_profile'] if (project and 'video_model_profile' in project.keys()) else 'ultra_low_priority',
             "flowkitProjectId":  project['flowkit_project_id']  if project else '',
             "projectRoot":       project['project_root']        if project and 'project_root' in project.keys() else '',
             "mediaRoot":         project['media_root']          if project and 'media_root' in project.keys() else '',
@@ -594,16 +632,22 @@ def get_video_graph(project_id: str = 'default') -> dict:
 
 def save_video_graph(nodes: list, edges: list, project_id: str = 'default'):
     conn = get_conn()
-    conn.execute("""
-        INSERT INTO video_graph_state (project_id, nodes_json, edges_json, updated_at)
-        VALUES (?, ?, ?, unixepoch())
-        ON CONFLICT(project_id) DO UPDATE SET
-            nodes_json = excluded.nodes_json,
-            edges_json = excluded.edges_json,
-            updated_at = unixepoch()
-    """, (project_id, json.dumps(nodes, ensure_ascii=False), json.dumps(edges, ensure_ascii=False)))
-    conn.commit()
-    conn.close()
+    try:
+        _ensure_project_row(conn, project_id)
+        conn.execute("""
+            INSERT INTO video_graph_state (project_id, nodes_json, edges_json, updated_at)
+            VALUES (?, ?, ?, unixepoch())
+            ON CONFLICT(project_id) DO UPDATE SET
+                nodes_json = excluded.nodes_json,
+                edges_json = excluded.edges_json,
+                updated_at = unixepoch()
+        """, (project_id, json.dumps(nodes, ensure_ascii=False), json.dumps(edges, ensure_ascii=False)))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 # ── Script line helpers ───────────────────────────────────────────────────
@@ -642,6 +686,7 @@ def save_script_lines(lines: list, project_id: str = 'default'):
     conn = get_conn()
     try:
         conn.execute("BEGIN IMMEDIATE")
+        _ensure_project_row(conn, project_id)
         conn.execute("DELETE FROM script_line_visual_refs WHERE project_id=?", (project_id,))
         conn.execute("DELETE FROM script_lines WHERE project_id=?", (project_id,))
         for idx, line in enumerate(lines):
@@ -714,43 +759,50 @@ def get_timeline_clips(project_id: str = 'default') -> dict:
 
 def save_timeline_clips(audio_clips: list, video_clips: list, project_id: str = 'default'):
     conn = get_conn()
-    conn.execute("DELETE FROM timeline_audio_clips WHERE project_id=?", (project_id,))
-    for c in audio_clips:
-        from state import normalize_speaker_id
-        conn.execute("""
-            INSERT INTO timeline_audio_clips
-                (id, project_id, line_id, speaker, audio_file, track, start_time, duration, volume)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            c["id"], project_id,
-            c.get("lineId"), normalize_speaker_id(c.get("speaker", "")),
-            c.get("filename", ""),
-            c.get("track", 0),
-            c.get("startTime", 0),
-            c.get("duration", 2.0),
-            c.get("volume", 100.0),
-        ))
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        _ensure_project_row(conn, project_id)
+        conn.execute("DELETE FROM timeline_audio_clips WHERE project_id=?", (project_id,))
+        for c in audio_clips:
+            from state import normalize_speaker_id
+            conn.execute("""
+                INSERT INTO timeline_audio_clips
+                    (id, project_id, line_id, speaker, audio_file, track, start_time, duration, volume)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                c["id"], project_id,
+                c.get("lineId"), normalize_speaker_id(c.get("speaker", "")),
+                c.get("filename", ""),
+                c.get("track", 0),
+                c.get("startTime", 0),
+                c.get("duration", 2.0),
+                c.get("volume", 100.0),
+            ))
 
-    conn.execute("DELETE FROM timeline_video_clips WHERE project_id=?", (project_id,))
-    for c in video_clips:
-        conn.execute("""
-            INSERT INTO timeline_video_clips
-                (id, project_id, line_id, video_url, start_time, duration, track, trim_start, keep_sound, volume)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            c["id"], project_id,
-            c.get("lineId"),
-            c.get("videoUrl", ""),
-            c.get("startTime", 0),
-            c.get("duration", 8.0),
-            c.get("track", 0),
-            c.get("trimStart", 0),
-            1 if c.get("keepSound") else 0,
-            c.get("volume", 100.0),
-        ))
+        conn.execute("DELETE FROM timeline_video_clips WHERE project_id=?", (project_id,))
+        for c in video_clips:
+            conn.execute("""
+                INSERT INTO timeline_video_clips
+                    (id, project_id, line_id, video_url, start_time, duration, track, trim_start, keep_sound, volume)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                c["id"], project_id,
+                c.get("lineId"),
+                c.get("videoUrl", ""),
+                c.get("startTime", 0),
+                c.get("duration", 8.0),
+                c.get("track", 0),
+                c.get("trimStart", 0),
+                1 if c.get("keepSound") else 0,
+                c.get("volume", 100.0),
+            ))
 
-    conn.commit()
-    conn.close()
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+    finally:
+        conn.close()
 
 
 # ── Entity helpers ────────────────────────────────────────────────────────

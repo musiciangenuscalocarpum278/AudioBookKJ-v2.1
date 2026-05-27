@@ -6,7 +6,7 @@
 import axios from 'axios';
 import { useMutation } from '@tanstack/react-query';
 import { API } from '../../config';
-import type { ScriptLine, CharacterMetadata, VoiceParams } from '../../types';
+import type { ScriptLine, CharacterMetadata, VoiceParams, VideoModelProfile } from '../../types';
 
 // ── Script / AI ─────────────────────────────────────────────────────────────
 
@@ -79,6 +79,7 @@ export function useSaveProfile() {
       speakerVoiceParams: Record<string, VoiceParams>;
       lockedVoices: Record<string, boolean>;
       flowkitProjectId: string;
+      videoModelProfile?: VideoModelProfile;
       project_id: string;
     }) => {
       const res = await axios.post(API.projectProfile, vars);

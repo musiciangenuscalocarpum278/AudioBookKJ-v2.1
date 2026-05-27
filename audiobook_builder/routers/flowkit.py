@@ -1,6 +1,7 @@
+import hmac
 import json
 import asyncio
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request
+from fastapi import APIRouter, Header, WebSocket, WebSocketDisconnect, Request, HTTPException
 from flow_service import flow_service
 from database import get_pending_jobs, update_job_status
 from state import flowkit_state
@@ -49,7 +50,14 @@ async def api_flowkit_status():
 
 
 @router.post("/api/ext/callback")
-async def ext_callback(request: Request):
+async def ext_callback(
+    request: Request,
+    x_callback_secret: str | None = Header(default=None, alias="X-Callback-Secret"),
+):
+    expected = flowkit_state.get("callbackSecret", "")
+    if not x_callback_secret or not expected or not hmac.compare_digest(x_callback_secret, expected):
+        raise HTTPException(status_code=401, detail="invalid callback secret")
+
     try:
         data = await request.json()
     except Exception as e:
